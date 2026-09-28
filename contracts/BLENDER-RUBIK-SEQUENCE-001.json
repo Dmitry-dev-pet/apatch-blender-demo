@@ -1,0 +1,68 @@
+{
+  "id": "BLENDER-RUBIK-SEQUENCE-001",
+  "title": "Rubik R U R' U' synchronized 3D + permutation graph",
+  "intent": "Render a 480x480 six-second Blender video where a real 3D Rubik cube performs R U R' U' while 54 colored sticker nodes move synchronously along three permutation rings.",
+  "authority": "human",
+  "sequence": [
+    "R",
+    "U",
+    "R'",
+    "U'"
+  ],
+  "implementation_write_set": [
+    "blender/build_sequence_demo.py",
+    "sequence_output/sequence-animated.blend",
+    "sequence_output/sequence-demo.mp4",
+    "sequence_output/sequence-preview.png",
+    "sequence_output/sequence-manifest.json"
+  ],
+  "frozen_judge": [
+    "blender/verify_sequence_demo.py"
+  ],
+  "acceptance": {
+    "resolution": [
+      480,
+      480
+    ],
+    "fps": 30,
+    "frame_range": [
+      1,
+      180
+    ],
+    "duration_seconds": 6,
+    "pieces": 27,
+    "graph_nodes": 54,
+    "graph_rings": 3,
+    "move_windows": [
+      {
+        "move": "R",
+        "start": 21,
+        "end": 50
+      },
+      {
+        "move": "U",
+        "start": 61,
+        "end": 90
+      },
+      {
+        "move": "R'",
+        "start": 101,
+        "end": 130
+      },
+      {
+        "move": "U'",
+        "start": 141,
+        "end": 170
+      }
+    ],
+    "graph_rule": "sticker nodes preserve center/edge/corner ring and travel along that ring to their permuted slot",
+    "renderer": "BLENDER_EEVEE"
+  },
+  "evidence": [
+    "sequence_output/sequence-animated.blend",
+    "sequence_output/sequence-demo.mp4",
+    "sequence_output/sequence-preview.png",
+    "sequence_output/sequence-manifest.json",
+    "sequence_output/sequence-verification.json"
+  ]
+}

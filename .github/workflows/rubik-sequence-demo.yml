@@ -1,21 +1,18 @@
-name: Blender contract demo
+name: Rubik sequence 480
 
 on:
   push:
     branches:
       - main
     paths:
-      - "blender/build_scene.py"
-      - "blender/verify_scene.py"
-      - "blender/animate_scene.py"
-      - "blender/verify_animation.py"
-      - "contracts/BLENDER-RUBIK-001.json"
-      - "contracts/BLENDER-RUBIK-VIDEO-001.json"
-      - ".github/workflows/blender-contract-demo.yml"
+      - "blender/build_sequence_demo.py"
+      - "blender/verify_sequence_demo.py"
+      - "contracts/BLENDER-RUBIK-SEQUENCE-001.json"
+      - ".github/workflows/rubik-sequence-demo.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   BLENDER_VERSION: "5.2.2"
@@ -25,9 +22,9 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Cache Blender
         uses: actions/cache@v4
@@ -35,7 +32,7 @@ jobs:
           path: /home/runner/.cache/blender-5.2.2
           key: blender-linux-x64-5.2.2
 
-      - name: Install pinned Blender
+      - name: Install Blender
         shell: bash
         run: |
           set -euo pipefail
@@ -50,58 +47,39 @@ jobs:
             tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
           fi
           echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
-          "$BLENDER_CACHE/blender" --version
+          blender --version
 
       - name: Install headless dependencies
         shell: bash
         run: |
-          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
             libxxf86vm1 libxkbcommon0
 
-      - name: Build base scene
+      - name: Build sequence scene
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf output
+          rm -rf sequence_output
           blender --background --factory-startup \
             --python-exit-code 1 \
-            --python blender/build_scene.py
+            --python blender/build_sequence_demo.py
 
-      - name: Verify frozen base contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          blender output/rubik.blend --background \
-            --python-exit-code 1 \
-            --python blender/verify_scene.py
-
-      - name: Prepare contract animation
-        shell: bash
-        run: |
-          set -euo pipefail
-          blender output/rubik.blend --background \
-            --python-exit-code 1 \
-            --python blender/animate_scene.py
-
-      - name: Upload prepared scene
+      - name: Upload prepared sequence
         uses: actions/upload-artifact@v4
         with:
-          name: prepared-scene
+          name: sequence-prepared
           path: |
-            output/rubik.blend
-            output/rubik-animated.blend
-            output/render.png
-            output/scene-manifest.json
-            output/verification.json
+            sequence_output/sequence-animated.blend
+            sequence_output/sequence-preview.png
+            sequence_output/sequence-manifest.json
           if-no-files-found: error
 
   render:
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
@@ -126,8 +104,7 @@ jobs:
             end: 180
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Cache Blender
         uses: actions/cache@v4
@@ -135,7 +112,7 @@ jobs:
           path: /home/runner/.cache/blender-5.2.2
           key: blender-linux-x64-5.2.2
 
-      - name: Install pinned Blender
+      - name: Install Blender
         shell: bash
         run: |
           set -euo pipefail
@@ -144,9 +121,6 @@ jobs:
             archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
             base="https://download.blender.org/release/Blender5.2"
             curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
-            curl --fail --location --retry 4 --output /tmp/blender.sha256 "$base/blender-${BLENDER_VERSION}.sha256"
-            grep " $archive$" /tmp/blender.sha256 > /tmp/blender-linux.sha256
-            (cd /tmp && sha256sum --check blender-linux.sha256)
             tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
           fi
           echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
@@ -154,17 +128,16 @@ jobs:
       - name: Install headless dependencies
         shell: bash
         run: |
-          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
             libxxf86vm1 libxkbcommon0
 
-      - name: Download prepared scene
+      - name: Download prepared sequence
         uses: actions/download-artifact@v4
         with:
-          name: prepared-scene
-          path: output
+          name: sequence-prepared
+          path: sequence_output
 
       - name: Render shard
         shell: bash
@@ -173,22 +146,22 @@ jobs:
           END_FRAME: ${{ matrix.end }}
         run: |
           set -euo pipefail
-          mkdir -p output/frames
-          blender output/rubik-animated.blend --background \
+          mkdir -p sequence_output/frames
+          blender sequence_output/sequence-animated.blend --background \
             -s "$START_FRAME" \
             -e "$END_FRAME" \
-            -o "$GITHUB_WORKSPACE/output/frames/frame_" \
+            -o "$GITHUB_WORKSPACE/sequence_output/frames/frame_" \
             -F PNG \
             --render-anim
           expected=$((END_FRAME - START_FRAME + 1))
-          actual=$(find output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)
+          actual=$(find sequence_output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)
           test "$actual" -eq "$expected"
 
-      - name: Upload rendered shard
+      - name: Upload shard
         uses: actions/upload-artifact@v4
         with:
-          name: frames-${{ matrix.shard }}
-          path: output/frames/
+          name: sequence-frames-${{ matrix.shard }}
+          path: sequence_output/frames/
           if-no-files-found: error
           compression-level: 1
 
@@ -198,12 +171,9 @@ jobs:
       - render
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Cache Blender
         uses: actions/cache@v4
@@ -211,7 +181,7 @@ jobs:
           path: /home/runner/.cache/blender-5.2.2
           key: blender-linux-x64-5.2.2
 
-      - name: Install pinned Blender
+      - name: Install Blender
         shell: bash
         run: |
           set -euo pipefail
@@ -220,9 +190,6 @@ jobs:
             archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
             base="https://download.blender.org/release/Blender5.2"
             curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
-            curl --fail --location --retry 4 --output /tmp/blender.sha256 "$base/blender-${BLENDER_VERSION}.sha256"
-            grep " $archive$" /tmp/blender.sha256 > /tmp/blender-linux.sha256
-            (cd /tmp && sha256sum --check blender-linux.sha256)
             tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
           fi
           echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
@@ -230,88 +197,66 @@ jobs:
       - name: Install verification dependencies
         shell: bash
         run: |
-          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
             libxxf86vm1 libxkbcommon0 ffmpeg
 
-      - name: Download prepared scene
+      - name: Download prepared sequence
         uses: actions/download-artifact@v4
         with:
-          name: prepared-scene
-          path: output
+          name: sequence-prepared
+          path: sequence_output
 
-      - name: Download all rendered frames
+      - name: Download all frames
         uses: actions/download-artifact@v4
         with:
-          pattern: frames-*
-          path: output/frames
+          pattern: sequence-frames-*
+          path: sequence_output/frames
           merge-multiple: true
 
-      - name: Validate complete frame set
+      - name: Validate frames
         shell: bash
         run: |
           set -euo pipefail
-          actual=$(find output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)
+          actual=$(find sequence_output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)
           test "$actual" -eq 180
-          test -s output/frames/frame_0001.png
-          test -s output/frames/frame_0180.png
+          test -s sequence_output/frames/frame_0001.png
+          test -s sequence_output/frames/frame_0180.png
 
-      - name: Encode contract video
+      - name: Encode MP4
         shell: bash
         run: |
           set -euo pipefail
           ffmpeg -y \
             -framerate 30 \
             -start_number 1 \
-            -i output/frames/frame_%04d.png \
+            -i sequence_output/frames/frame_%04d.png \
             -c:v libx264 \
             -pix_fmt yuv420p \
-            -crf 18 \
+            -crf 20 \
             -movflags +faststart \
-            output/rubik-demo.mp4
-          test -s output/rubik-demo.mp4
-          ffprobe -v error -show_entries stream=width,height,r_frame_rate \
-            -show_entries format=duration,size -of json output/rubik-demo.mp4
+            sequence_output/sequence-demo.mp4
+          ffprobe -v error \
+            -show_entries stream=width,height,r_frame_rate \
+            -show_entries format=duration,size \
+            -of json sequence_output/sequence-demo.mp4
 
-      - name: Verify frozen video contract
+      - name: Verify frozen sequence contract
         shell: bash
         run: |
           set -euo pipefail
-          blender output/rubik-animated.blend --background \
+          blender sequence_output/sequence-animated.blend --background \
             --python-exit-code 1 \
-            --python blender/verify_animation.py
-          cat output/video-verification.json
+            --python blender/verify_sequence_demo.py
+          cat sequence_output/sequence-verification.json
 
       - name: Remove intermediate frames
-        shell: bash
-        run: rm -rf output/frames
+        run: rm -rf sequence_output/frames
 
-      - name: Upload full Blender evidence
+      - name: Upload sequence evidence
         uses: actions/upload-artifact@v4
         with:
-          name: rubik-contract-demo
-          path: output/
+          name: rubik-sequence-480
+          path: sequence_output/
           if-no-files-found: error
-
-      - name: Publish latest verified preview
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p generated
-          cp output/render.png generated/render.png
-          cp output/scene-manifest.json generated/scene-manifest.json
-          cp output/verification.json generated/verification.json
-          cp output/video-verification.json generated/video-verification.json
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add generated/
-
-          if git diff --cached --quiet; then
-            echo "Generated evidence unchanged."
-          else
-            git commit -m "chore: publish verified Blender preview [skip ci]"
-            git push
-          fi

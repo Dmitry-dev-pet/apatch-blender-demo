@@ -57,3 +57,17 @@ render + evidence
 ```
 
 The next step is to wire this same pattern through APatch's governed execution and evidence model.
+
+
+## 480x480 sequence demo
+
+`BLENDER-RUBIK-SEQUENCE-001` renders a six-second 480x480 video of `R U R' U'`.
+
+The left side is a real 3D Rubik cube. The right side is a 54-node sticker permutation graph on three concentric rings:
+
+- center stickers stay on the center ring;
+- edge stickers stay on the edge ring;
+- corner stickers stay on the corner ring;
+- every move animates graph nodes along their ring to the new facelet slot.
+
+The workflow renders six 30-frame shards in parallel, merges all 180 frames, encodes H.264 MP4, and runs an independent frozen verifier against the cube and graph checkpoints.
