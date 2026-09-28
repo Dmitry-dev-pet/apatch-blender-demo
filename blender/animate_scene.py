@@ -102,7 +102,7 @@ def configure_render() -> None:
     scene.render.resolution_percentage = 100
     scene.render.engine = "BLENDER_EEVEE"
     if scene.eevee is not None:
-        scene.eevee.taa_render_samples = 16
+        scene.eevee.taa_render_samples = 4
 
     frames_dir = OUTPUT / "frames"
     frames_dir.mkdir(parents=True, exist_ok=True)
