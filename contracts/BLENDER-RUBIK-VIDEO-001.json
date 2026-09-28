@@ -32,7 +32,13 @@
       "animated": true,
       "minimum_travel_blender_units": 5
     },
-    "frozen_geometry": "all non-U-layer cubies and stickers"
+    "frozen_geometry": "all non-U-layer cubies and stickers",
+    "render_intermediate": "PNG frame sequence",
+    "video_encoding": {
+      "container": "MP4",
+      "codec": "H.264",
+      "pixel_format": "yuv420p"
+    }
   },
   "evidence": [
     "output/rubik-animated.blend",

@@ -102,11 +102,11 @@ def configure_render() -> None:
     scene.render.resolution_percentage = 100
     scene.render.engine = "BLENDER_EEVEE"
 
-    scene.render.image_settings.file_format = "FFMPEG"
-    scene.render.ffmpeg.format = "MPEG4"
-    scene.render.ffmpeg.codec = "H264"
-    scene.render.ffmpeg.constant_rate_factor = "MEDIUM"
-    scene.render.filepath = str(OUTPUT / "rubik-demo")
+    frames_dir = OUTPUT / "frames"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.use_file_extension = True
+    scene.render.filepath = str(frames_dir / "frame_")
 
 
 def main() -> None:

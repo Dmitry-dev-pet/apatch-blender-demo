@@ -1,0 +1,15 @@
+{
+  "id": "BLENDER-RUBIK-VIDEO-001-A1",
+  "contract": "BLENDER-RUBIK-VIDEO-001",
+  "reason": "Blender 5.x separates media type from image file format; direct FFMPEG assignment through image_settings.file_format is invalid. Use Blender's recommended frame-sequence workflow and encode the verified frames with ffmpeg.",
+  "authority_decision": "Keep the visible acceptance contract unchanged: 180 frames, 30 fps, 6 seconds, 1080x1080, +90 degree U turn, animated camera, frozen lower layers. Amend only the render/encoding mechanism.",
+  "before": {
+    "pipeline": "direct Blender movie output"
+  },
+  "after": {
+    "pipeline": "Blender PNG frame sequence -> ffmpeg H.264 MP4"
+  },
+  "evidence": {
+    "failed_run": 36399978233
+  }
+}

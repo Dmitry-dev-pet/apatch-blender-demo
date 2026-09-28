@@ -115,16 +115,19 @@ def main() -> None:
         checks,
     )
     check(
-        "video_format",
-        scene.render.image_settings.file_format == "FFMPEG"
-        and scene.render.ffmpeg.format == "MPEG4"
-        and scene.render.ffmpeg.codec == "H264",
-        {
-            "file_format": scene.render.image_settings.file_format,
-            "container": scene.render.ffmpeg.format,
-            "codec": scene.render.ffmpeg.codec,
-        },
-        {"file_format": "FFMPEG", "container": "MPEG4", "codec": "H264"},
+        "frame_render_format",
+        scene.render.image_settings.file_format == "PNG",
+        scene.render.image_settings.file_format,
+        "PNG",
+        checks,
+    )
+
+    frame_files = sorted((OUTPUT / "frames").glob("frame_*.png"))
+    check(
+        "rendered_frame_count",
+        len(frame_files) == FRAME_END - FRAME_START + 1,
+        len(frame_files),
+        FRAME_END - FRAME_START + 1,
         checks,
     )
 
