@@ -1,0 +1,15 @@
+{
+  "id": "BLENDER-RUBIK-001-A1",
+  "contract": "BLENDER-RUBIK-001",
+  "reason": "Blender 5.2.2 LTS exposes the Eevee render engine as BLENDER_EEVEE; the initially frozen BLENDER_EEVEE_NEXT enum is invalid in the pinned runtime.",
+  "authority_decision": "Amend only the render-engine enum. Geometry, counts, dimensions, turn angle, resolution, evidence, and all other acceptance criteria remain unchanged.",
+  "before": {
+    "render_engine": "BLENDER_EEVEE_NEXT"
+  },
+  "after": {
+    "render_engine": "BLENDER_EEVEE"
+  },
+  "evidence": {
+    "failed_run": 36397801921
+  }
+}
