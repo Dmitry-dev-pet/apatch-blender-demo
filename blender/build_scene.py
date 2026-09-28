@@ -213,7 +213,7 @@ def main() -> None:
     scene = bpy.context.scene
     scene["contract_id"] = CONTRACT_ID
     scene["top_turn_deg"] = TOP_TURN_DEG
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 768
     scene.render.resolution_y = 768
     scene.render.resolution_percentage = 100
