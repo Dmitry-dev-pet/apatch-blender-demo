@@ -1,0 +1,96 @@
+name: Blender contract demo
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-verify-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      BLENDER_VERSION: "5.2.2"
+      BLENDER_CACHE: "/home/runner/.cache/blender-5.2.2"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Blender
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/blender-5.2.2
+          key: blender-linux-x64-5.2.2
+
+      - name: Install pinned Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$BLENDER_CACHE"
+
+          if [ ! -x "$BLENDER_CACHE/blender" ]; then
+            archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+            base="https://download.blender.org/release/Blender5.2"
+            curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
+            curl --fail --location --retry 4 --output /tmp/blender.sha256 "$base/blender-${BLENDER_VERSION}.sha256"
+            grep " $archive$" /tmp/blender.sha256 > /tmp/blender-linux.sha256
+            (
+              cd /tmp
+              sha256sum --check blender-linux.sha256
+            )
+            tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
+          fi
+
+          echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
+          "$BLENDER_CACHE/blender" --version
+
+      - name: Build scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf output
+          blender --background --factory-startup \
+            --python-exit-code 1 \
+            --python blender/build_scene.py
+
+      - name: Verify frozen contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender output/rubik.blend --background \
+            --python-exit-code 1 \
+            --python blender/verify_scene.py
+          cat output/verification.json
+
+      - name: Upload full Blender evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubik-contract-demo
+          path: output/
+          if-no-files-found: error
+
+      - name: Publish latest verified preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p generated
+          cp output/render.png generated/render.png
+          cp output/scene-manifest.json generated/scene-manifest.json
+          cp output/verification.json generated/verification.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add generated/
+
+          if git diff --cached --quiet; then
+            echo "Generated evidence unchanged."
+          else
+            git commit -m "chore: publish verified Blender preview [skip ci]"
+            git push
+          fi
