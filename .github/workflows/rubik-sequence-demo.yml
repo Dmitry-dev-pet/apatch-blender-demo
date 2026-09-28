@@ -47,7 +47,7 @@ jobs:
             tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
           fi
           echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
-          blender --version
+          "$BLENDER_CACHE/blender" --version
 
       - name: Install headless dependencies
         shell: bash
