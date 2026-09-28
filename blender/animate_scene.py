@@ -4,6 +4,7 @@ import math
 from pathlib import Path
 
 import bpy
+from bpy_extras.anim_utils import animdata_get_channelbag_for_assigned_slot
 from mathutils import Vector
 
 
@@ -31,10 +32,14 @@ def insert_transform_key(obj, frame: int) -> None:
 
 def tune_action(obj) -> None:
     anim = obj.animation_data
-    action = anim.action if anim else None
-    if action is None:
+    if anim is None or anim.action is None:
         return
-    for fcurve in action.fcurves:
+
+    channelbag = animdata_get_channelbag_for_assigned_slot(anim)
+    if channelbag is None:
+        return
+
+    for fcurve in channelbag.fcurves:
         for point in fcurve.keyframe_points:
             point.interpolation = "BEZIER"
             point.handle_left_type = "AUTO_CLAMPED"
