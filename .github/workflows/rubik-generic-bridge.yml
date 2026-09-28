@@ -1,0 +1,263 @@
+name: Generic APatch Blender bridge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/RUBIK-GENERIC-BRIDGE-001.json"
+      - ".github/workflows/rubik-generic-bridge.yml"
+      - "blender/build_sequence_demo.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BLENDER_VERSION: "5.2.2"
+  BLENDER_CACHE: "/home/runner/.cache/blender-5.2.2"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout demo
+        uses: actions/checkout@v4
+
+      - name: Checkout generic bridge
+        uses: actions/checkout@v4
+        with:
+          repository: Dmitry-dev-pet/apatch-blender
+          path: _bridge
+
+      - name: Cache Blender
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/blender-5.2.2
+          key: blender-linux-x64-5.2.2
+
+      - name: Install Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$BLENDER_CACHE"
+          if [ ! -x "$BLENDER_CACHE/blender" ]; then
+            archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+            base="https://download.blender.org/release/Blender5.2"
+            curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
+            tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
+          fi
+          echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
+          "$BLENDER_CACHE/blender" --version
+
+      - name: Install headless dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
+            libxxf86vm1 libxkbcommon0
+
+      - name: Build existing Rubik base scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf sequence_output bridge_output
+          blender --background --factory-startup \
+            --python-exit-code 1 \
+            --python blender/build_sequence_demo.py
+
+      - name: Execute generic contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup \
+            --python-exit-code 1 \
+            --python _bridge/scripts/execute_contract.py -- \
+            --contract "$GITHUB_WORKSPACE/contracts/RUBIK-GENERIC-BRIDGE-001.json" \
+            --root "$GITHUB_WORKSPACE"
+
+      - name: Upload prepared bridge scene
+        uses: actions/upload-artifact@v4
+        with:
+          name: generic-bridge-prepared
+          path: |
+            sequence_output/sequence-animated.blend
+            bridge_output/edited.blend
+            bridge_output/preview.png
+            bridge_output/execution.json
+          if-no-files-found: error
+
+  render:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: "01"
+            start: 1
+            end: 30
+          - shard: "02"
+            start: 31
+            end: 60
+          - shard: "03"
+            start: 61
+            end: 90
+          - shard: "04"
+            start: 91
+            end: 120
+          - shard: "05"
+            start: 121
+            end: 150
+          - shard: "06"
+            start: 151
+            end: 180
+
+    steps:
+      - name: Checkout demo
+        uses: actions/checkout@v4
+
+      - name: Cache Blender
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/blender-5.2.2
+          key: blender-linux-x64-5.2.2
+
+      - name: Install Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$BLENDER_CACHE"
+          if [ ! -x "$BLENDER_CACHE/blender" ]; then
+            archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+            base="https://download.blender.org/release/Blender5.2"
+            curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
+            tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
+          fi
+          echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
+
+      - name: Install headless dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
+            libxxf86vm1 libxkbcommon0
+
+      - name: Download prepared scene
+        uses: actions/download-artifact@v4
+        with:
+          name: generic-bridge-prepared
+          path: .
+
+      - name: Render shard
+        shell: bash
+        env:
+          START_FRAME: ${{ matrix.start }}
+          END_FRAME: ${{ matrix.end }}
+        run: |
+          set -euo pipefail
+          mkdir -p bridge_output/frames
+          blender bridge_output/edited.blend --background \
+            -s "$START_FRAME" -e "$END_FRAME" \
+            -o "$GITHUB_WORKSPACE/bridge_output/frames/frame_" \
+            -F PNG --render-anim
+          expected=$((END_FRAME - START_FRAME + 1))
+          actual=$(find bridge_output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)
+          test "$actual" -eq "$expected"
+
+      - name: Upload shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: generic-bridge-frames-${{ matrix.shard }}
+          path: bridge_output/frames/
+          if-no-files-found: error
+          compression-level: 1
+
+  finalize:
+    needs: [prepare, render]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout demo
+        uses: actions/checkout@v4
+
+      - name: Checkout generic bridge
+        uses: actions/checkout@v4
+        with:
+          repository: Dmitry-dev-pet/apatch-blender
+          path: _bridge
+
+      - name: Cache Blender
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/blender-5.2.2
+          key: blender-linux-x64-5.2.2
+
+      - name: Install Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$BLENDER_CACHE"
+          if [ ! -x "$BLENDER_CACHE/blender" ]; then
+            archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+            base="https://download.blender.org/release/Blender5.2"
+            curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
+            tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
+          fi
+          echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
+
+      - name: Install verifier dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
+            libxxf86vm1 libxkbcommon0 ffmpeg
+
+      - name: Download prepared scene
+        uses: actions/download-artifact@v4
+        with:
+          name: generic-bridge-prepared
+          path: .
+
+      - name: Download frames
+        uses: actions/download-artifact@v4
+        with:
+          pattern: generic-bridge-frames-*
+          path: bridge_output/frames
+          merge-multiple: true
+
+      - name: Validate frames and encode MP4
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find bridge_output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)" -eq 180
+          ffmpeg -y \
+            -framerate 30 -start_number 1 \
+            -i bridge_output/frames/frame_%04d.png \
+            -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart \
+            bridge_output/demo.mp4
+
+      - name: Verify with generic bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup \
+            --python-exit-code 1 \
+            --python _bridge/scripts/verify_contract.py -- \
+            --contract "$GITHUB_WORKSPACE/contracts/RUBIK-GENERIC-BRIDGE-001.json" \
+            --root "$GITHUB_WORKSPACE"
+          cat bridge_output/verification.json
+
+      - name: Remove frames
+        run: rm -rf bridge_output/frames
+
+      - name: Upload generic bridge evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubik-generic-bridge-480
+          path: bridge_output/
+          if-no-files-found: error

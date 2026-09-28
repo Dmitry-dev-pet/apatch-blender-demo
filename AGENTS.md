@@ -36,3 +36,6 @@ The demo is successful only when Blender exits cleanly and both `verification.js
 
 ## Bounded scene edit
 `contracts/BLENDER-SCENE-EDIT-001.json` governs edits to an existing Blender scene. The edit may change only explicitly allowed effects; the frozen verifier compares the edited scene against a rebuilt base scene and fails if protected static scene data or animation differs.
+
+## Generic bridge consumer
+`contracts/RUBIK-GENERIC-BRIDGE-001.json` must be executed and verified through the external `Dmitry-dev-pet/apatch-blender` bridge. Do not replace it with a scene-specific Python edit script.

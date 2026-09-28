@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "id": "RUBIK-GENERIC-BRIDGE-001",
+  "base_scene": "sequence_output/sequence-animated.blend",
+  "output_scene": "bridge_output/edited.blend",
+  "execution_record": "bridge_output/execution.json",
+  "preview_path": "bridge_output/preview.png",
+  "verification_report": "bridge_output/verification.json",
+  "video": {
+    "path": "bridge_output/demo.mp4",
+    "width": 480,
+    "height": 480,
+    "fps": 30,
+    "duration": 6,
+    "duration_tolerance": 0.15,
+    "min_size": 100000
+  },
+  "allowed_operations": [
+    "set_world",
+    "scale_camera_framing",
+    "add_area_light",
+    "set_render",
+    "render_preview"
+  ],
+  "operations": [
+    {
+      "op": "set_world",
+      "params": {
+        "color": [
+          0.0025,
+          0.006,
+          0.018,
+          1
+        ],
+        "strength": 0.1
+      }
+    },
+    {
+      "op": "scale_camera_framing",
+      "params": {
+        "camera": "Camera",
+        "factor": 0.92
+      }
+    },
+    {
+      "op": "add_area_light",
+      "params": {
+        "name": "Bridge_BlueRim",
+        "color": [
+          0.04,
+          0.18,
+          1
+        ],
+        "energy": 1150,
+        "size": 2.6,
+        "location": [
+          -4.8,
+          2.6,
+          4.4
+        ],
+        "target": [
+          -2,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "op": "set_render",
+      "params": {
+        "resolution": [
+          480,
+          480
+        ],
+        "resolution_percentage": 100,
+        "fps": 30,
+        "frame_start": 1,
+        "frame_end": 180
+      }
+    },
+    {
+      "op": "render_preview",
+      "params": {
+        "frame": 80,
+        "path": "bridge_output/preview.png"
+      }
+    }
+  ],
+  "protected": {
+    "object_globs": [
+      "CubeContainer",
+      "Piece_*",
+      "Cubie_*",
+      "Sticker_*",
+      "Graph_*",
+      "CenterRing",
+      "EdgeRing",
+      "CornerRing",
+      "SequenceTitle",
+      "CubeLabel",
+      "GraphLabel"
+    ],
+    "animation_object_globs": [
+      "Piece_*",
+      "Graph_*"
+    ],
+    "frames": "all",
+    "scene_keys": [
+      "sequence_contract_id",
+      "sequence"
+    ]
+  },
+  "expected": {
+    "world": {
+      "color": [
+        0.0025,
+        0.006,
+        0.018,
+        1
+      ],
+      "strength": 0.1
+    },
+    "camera": {
+      "name": "Camera",
+      "type": "ORTHO",
+      "framing_scale_factor": 0.92,
+      "transform_unchanged": true
+    },
+    "lights": [
+      {
+        "name": "Bridge_BlueRim",
+        "type": "AREA",
+        "color": [
+          0.04,
+          0.18,
+          1
+        ],
+        "energy": 1150,
+        "size": 2.6,
+        "location": [
+          -4.8,
+          2.6,
+          4.4
+        ]
+      }
+    ],
+    "render": {
+      "resolution": [
+        480,
+        480
+      ],
+      "resolution_percentage": 100,
+      "fps": 30,
+      "frame_range": [
+        1,
+        180
+      ]
+    }
+  }
+}

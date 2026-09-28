@@ -85,3 +85,8 @@ The example permits only:
 - new render output paths.
 
 The frozen verifier independently rebuilds/loads the base scene and compares protected static scene content plus all piece-root and graph-node transforms across all 180 animation frames. The edited result is accepted only if those semantic hashes remain identical while the requested visual changes are present.
+
+
+## Generic bridge integration
+
+`RUBIK-GENERIC-BRIDGE-001` is the first integration that no longer uses a scene-specific edit implementation. The demo checks out `Dmitry-dev-pet/apatch-blender`, builds the existing Rubik scene, executes a JSON operation plan through the generic bridge, renders 480x480 shards, and verifies protected scene/animation state using the generic semantic verifier.
