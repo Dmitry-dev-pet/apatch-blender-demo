@@ -36,7 +36,7 @@ Outputs:
 - `output/scene-manifest.json`
 - `output/verification.json`
 
-GitHub Actions runs the same pipeline using pinned Blender 5.2.2 LTS and publishes the full output as a workflow artifact. The latest validated preview is also committed to `generated/render.png`.
+GitHub Actions runs the same pipeline using pinned Blender 5.2.2 LTS and publishes the full output as a workflow artifact. The pipeline also creates a 6-second, 30 fps, 1080x1080 MP4 with a camera orbit and a contract-verified +90 degree U-layer turn. The latest validated still preview and verification JSON are committed under `generated/`.
 
 ## Why this exists
 

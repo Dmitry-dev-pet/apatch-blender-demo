@@ -1,0 +1,42 @@
+{
+  "id": "BLENDER-RUBIK-VIDEO-001",
+  "title": "Contract-driven Rubik cube animation",
+  "intent": "Render a six-second Blender animation with a camera orbit and a real +90 degree U-layer turn while keeping all other cube geometry unchanged.",
+  "authority": "human",
+  "implementation_write_set": [
+    "blender/animate_scene.py",
+    "output/rubik-animated.blend",
+    "output/rubik-demo.mp4"
+  ],
+  "frozen_judge": [
+    "blender/verify_animation.py"
+  ],
+  "acceptance": {
+    "frame_start": 1,
+    "frame_end": 180,
+    "fps": 30,
+    "duration_seconds": 6,
+    "render_resolution": [
+      1080,
+      1080
+    ],
+    "render_engine": "BLENDER_EEVEE",
+    "turn": {
+      "layer": "U",
+      "axis": "Z",
+      "start_frame": 70,
+      "end_frame": 100,
+      "degrees": 90
+    },
+    "camera": {
+      "animated": true,
+      "minimum_travel_blender_units": 5
+    },
+    "frozen_geometry": "all non-U-layer cubies and stickers"
+  },
+  "evidence": [
+    "output/rubik-animated.blend",
+    "output/rubik-demo.mp4",
+    "output/video-verification.json"
+  ]
+}

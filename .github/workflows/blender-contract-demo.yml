@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-verify-render:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     env:
       BLENDER_VERSION: "5.2.2"
@@ -63,7 +63,8 @@ jobs:
             libxfixes3 \
             libxrender1 \
             libxxf86vm1 \
-            libxkbcommon0
+            libxkbcommon0 \
+            ffmpeg
 
       - name: Build scene
         shell: bash
@@ -83,6 +84,31 @@ jobs:
             --python blender/verify_scene.py
           cat output/verification.json
 
+      - name: Prepare contract animation
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender output/rubik.blend --background \
+            --python-exit-code 1 \
+            --python blender/animate_scene.py
+
+      - name: Render contract video
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender output/rubik-animated.blend --background --render-anim
+          test -s output/rubik-demo.mp4
+          ls -lh output/rubik-demo.mp4
+
+      - name: Verify frozen video contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender output/rubik-animated.blend --background \
+            --python-exit-code 1 \
+            --python blender/verify_animation.py
+          cat output/video-verification.json
+
       - name: Upload full Blender evidence
         uses: actions/upload-artifact@v4
         with:
@@ -98,6 +124,7 @@ jobs:
           cp output/render.png generated/render.png
           cp output/scene-manifest.json generated/scene-manifest.json
           cp output/verification.json generated/verification.json
+          cp output/video-verification.json generated/video-verification.json
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
