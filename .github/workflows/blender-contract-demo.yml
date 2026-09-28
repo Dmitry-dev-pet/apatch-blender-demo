@@ -9,14 +9,113 @@ on:
 permissions:
   contents: write
 
-jobs:
-  build-verify-render:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+env:
+  BLENDER_VERSION: "5.2.2"
+  BLENDER_CACHE: "/home/runner/.cache/blender-5.2.2"
 
-    env:
-      BLENDER_VERSION: "5.2.2"
-      BLENDER_CACHE: "/home/runner/.cache/blender-5.2.2"
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Blender
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/blender-5.2.2
+          key: blender-linux-x64-5.2.2
+
+      - name: Install pinned Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$BLENDER_CACHE"
+          if [ ! -x "$BLENDER_CACHE/blender" ]; then
+            archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+            base="https://download.blender.org/release/Blender5.2"
+            curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
+            curl --fail --location --retry 4 --output /tmp/blender.sha256 "$base/blender-${BLENDER_VERSION}.sha256"
+            grep " $archive$" /tmp/blender.sha256 > /tmp/blender-linux.sha256
+            (cd /tmp && sha256sum --check blender-linux.sha256)
+            tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
+          fi
+          echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
+          "$BLENDER_CACHE/blender" --version
+
+      - name: Install headless dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
+            libxxf86vm1 libxkbcommon0
+
+      - name: Build base scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf output
+          blender --background --factory-startup \
+            --python-exit-code 1 \
+            --python blender/build_scene.py
+
+      - name: Verify frozen base contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender output/rubik.blend --background \
+            --python-exit-code 1 \
+            --python blender/verify_scene.py
+
+      - name: Prepare contract animation
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender output/rubik.blend --background \
+            --python-exit-code 1 \
+            --python blender/animate_scene.py
+
+      - name: Upload prepared scene
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepared-scene
+          path: |
+            output/rubik.blend
+            output/rubik-animated.blend
+            output/render.png
+            output/scene-manifest.json
+            output/verification.json
+          if-no-files-found: error
+
+  render:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: "01"
+            start: 1
+            end: 30
+          - shard: "02"
+            start: 31
+            end: 60
+          - shard: "03"
+            start: 61
+            end: 90
+          - shard: "04"
+            start: 91
+            end: 120
+          - shard: "05"
+            start: 121
+            end: 150
+          - shard: "06"
+            start: 151
+            end: 180
 
     steps:
       - name: Checkout
@@ -33,71 +132,123 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$BLENDER_CACHE"
-
           if [ ! -x "$BLENDER_CACHE/blender" ]; then
             archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
             base="https://download.blender.org/release/Blender5.2"
             curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
             curl --fail --location --retry 4 --output /tmp/blender.sha256 "$base/blender-${BLENDER_VERSION}.sha256"
             grep " $archive$" /tmp/blender.sha256 > /tmp/blender-linux.sha256
-            (
-              cd /tmp
-              sha256sum --check blender-linux.sha256
-            )
+            (cd /tmp && sha256sum --check blender-linux.sha256)
             tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
           fi
-
           echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
-          "$BLENDER_CACHE/blender" --version
 
-      - name: Install headless render dependencies
+      - name: Install headless dependencies
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            libegl1 \
-            libgl1 \
-            libx11-6 \
-            libxi6 \
-            libxfixes3 \
-            libxrender1 \
-            libxxf86vm1 \
-            libxkbcommon0 \
-            ffmpeg
+            libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
+            libxxf86vm1 libxkbcommon0
 
-      - name: Build scene
+      - name: Download prepared scene
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-scene
+          path: output
+
+      - name: Render shard
+        shell: bash
+        env:
+          START_FRAME: ${{ matrix.start }}
+          END_FRAME: ${{ matrix.end }}
+        run: |
+          set -euo pipefail
+          mkdir -p output/frames
+          blender output/rubik-animated.blend --background \
+            -s "$START_FRAME" \
+            -e "$END_FRAME" \
+            -o "$GITHUB_WORKSPACE/output/frames/frame_" \
+            -F PNG \
+            --render-anim
+          expected=$((END_FRAME - START_FRAME + 1))
+          actual=$(find output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)
+          test "$actual" -eq "$expected"
+
+      - name: Upload rendered shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: frames-${{ matrix.shard }}
+          path: output/frames/
+          if-no-files-found: error
+          compression-level: 1
+
+  finalize:
+    needs:
+      - prepare
+      - render
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Blender
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/blender-5.2.2
+          key: blender-linux-x64-5.2.2
+
+      - name: Install pinned Blender
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf output
-          blender --background --factory-startup \
-            --python-exit-code 1 \
-            --python blender/build_scene.py
+          mkdir -p "$BLENDER_CACHE"
+          if [ ! -x "$BLENDER_CACHE/blender" ]; then
+            archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+            base="https://download.blender.org/release/Blender5.2"
+            curl --fail --location --retry 4 --output "/tmp/$archive" "$base/$archive"
+            curl --fail --location --retry 4 --output /tmp/blender.sha256 "$base/blender-${BLENDER_VERSION}.sha256"
+            grep " $archive$" /tmp/blender.sha256 > /tmp/blender-linux.sha256
+            (cd /tmp && sha256sum --check blender-linux.sha256)
+            tar -xJf "/tmp/$archive" -C "$BLENDER_CACHE" --strip-components=1
+          fi
+          echo "$BLENDER_CACHE" >> "$GITHUB_PATH"
 
-      - name: Verify frozen contract
+      - name: Install verification dependencies
         shell: bash
         run: |
           set -euo pipefail
-          blender output/rubik.blend --background \
-            --python-exit-code 1 \
-            --python blender/verify_scene.py
-          cat output/verification.json
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libx11-6 libxi6 libxfixes3 libxrender1 \
+            libxxf86vm1 libxkbcommon0 ffmpeg
 
-      - name: Prepare contract animation
+      - name: Download prepared scene
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-scene
+          path: output
+
+      - name: Download all rendered frames
+        uses: actions/download-artifact@v4
+        with:
+          pattern: frames-*
+          path: output/frames
+          merge-multiple: true
+
+      - name: Validate complete frame set
         shell: bash
         run: |
           set -euo pipefail
-          blender output/rubik.blend --background \
-            --python-exit-code 1 \
-            --python blender/animate_scene.py
-
-      - name: Render contract frames
-        shell: bash
-        run: |
-          set -euo pipefail
-          blender output/rubik-animated.blend --background --render-anim
-          test "$(find output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)" -eq 180
+          actual=$(find output/frames -maxdepth 1 -name 'frame_*.png' | wc -l)
+          test "$actual" -eq 180
+          test -s output/frames/frame_0001.png
+          test -s output/frames/frame_0180.png
 
       - name: Encode contract video
         shell: bash
@@ -113,7 +264,8 @@ jobs:
             -movflags +faststart \
             output/rubik-demo.mp4
           test -s output/rubik-demo.mp4
-          ls -lh output/rubik-demo.mp4
+          ffprobe -v error -show_entries stream=width,height,r_frame_rate \
+            -show_entries format=duration,size -of json output/rubik-demo.mp4
 
       - name: Verify frozen video contract
         shell: bash
