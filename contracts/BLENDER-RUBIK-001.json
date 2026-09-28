@@ -27,7 +27,7 @@
       768,
       768
     ],
-    "render_engine": "BLENDER_EEVEE_NEXT"
+    "render_engine": "BLENDER_EEVEE"
   },
   "evidence": [
     "output/scene-manifest.json",
