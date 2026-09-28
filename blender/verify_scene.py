@@ -122,7 +122,7 @@ def main() -> None:
         [768, 768],
         checks,
     )
-    check("render_engine", scene.render.engine == "BLENDER_EEVEE_NEXT", scene.render.engine, "BLENDER_EEVEE_NEXT", checks)
+    check("render_engine", scene.render.engine == "BLENDER_EEVEE", scene.render.engine, "BLENDER_EEVEE", checks)
     check("render_png_exists", (OUTPUT / "render.png").exists(), str(OUTPUT / "render.png"), "existing PNG", checks)
     check("manifest_exists", (OUTPUT / "scene-manifest.json").exists(), str(OUTPUT / "scene-manifest.json"), "existing JSON", checks)
 
