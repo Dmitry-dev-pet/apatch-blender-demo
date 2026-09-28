@@ -1,0 +1,99 @@
+{
+  "contract": "BLENDER-RUBIK-001",
+  "status": "PASS",
+  "blender_version": "5.2.2 LTS",
+  "checks": {
+    "contract_id": {
+      "pass": true,
+      "actual": "BLENDER-RUBIK-001",
+      "expected": "BLENDER-RUBIK-001"
+    },
+    "cubie_count": {
+      "pass": true,
+      "actual": 27,
+      "expected": 27
+    },
+    "sticker_count": {
+      "pass": true,
+      "actual": 54,
+      "expected": 54
+    },
+    "cubie_dimensions": {
+      "pass": true,
+      "actual": [],
+      "expected": "all 0.94 x 0.94 x 0.94"
+    },
+    "u_turn_positions": {
+      "pass": true,
+      "actual": [],
+      "expected": "top layer rotated +90\u00b0 around Z; lower layers unchanged"
+    },
+    "u_turn_rotations": {
+      "pass": true,
+      "actual": [],
+      "expected": "top layer +90\u00b0 Z rotation; lower layers 0\u00b0"
+    },
+    "face_sticker_counts": {
+      "pass": true,
+      "actual": {
+        "U": 9,
+        "D": 9,
+        "F": 9,
+        "B": 9,
+        "R": 9,
+        "L": 9
+      },
+      "expected": {
+        "U": 9,
+        "D": 9,
+        "F": 9,
+        "B": 9,
+        "R": 9,
+        "L": 9
+      }
+    },
+    "sticker_materials": {
+      "pass": true,
+      "actual": [],
+      "expected": {
+        "U": "Sticker_White",
+        "D": "Sticker_Yellow",
+        "F": "Sticker_Green",
+        "B": "Sticker_Blue",
+        "R": "Sticker_Red",
+        "L": "Sticker_Orange"
+      }
+    },
+    "camera_present": {
+      "pass": true,
+      "actual": "Camera",
+      "expected": "Camera"
+    },
+    "render_resolution": {
+      "pass": true,
+      "actual": [
+        768,
+        768
+      ],
+      "expected": [
+        768,
+        768
+      ]
+    },
+    "render_engine": {
+      "pass": true,
+      "actual": "BLENDER_EEVEE",
+      "expected": "BLENDER_EEVEE"
+    },
+    "render_png_exists": {
+      "pass": true,
+      "actual": "/home/runner/work/apatch-blender-demo/apatch-blender-demo/output/render.png",
+      "expected": "existing PNG"
+    },
+    "manifest_exists": {
+      "pass": true,
+      "actual": "/home/runner/work/apatch-blender-demo/apatch-blender-demo/output/scene-manifest.json",
+      "expected": "existing JSON"
+    }
+  }
+}

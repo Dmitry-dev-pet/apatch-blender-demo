@@ -1,0 +1,26 @@
+{
+  "contract": "BLENDER-RUBIK-001",
+  "blender_version": "5.2.2 LTS",
+  "cubies": 27,
+  "stickers": 54,
+  "grid": [
+    3,
+    3,
+    3
+  ],
+  "cubie_size": 0.94,
+  "grid_step": 1.0,
+  "top_turn_deg": 90.0,
+  "camera_location": [
+    6.9,
+    -8.7,
+    6.2
+  ],
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "resolution": [
+      768,
+      768
+    ]
+  }
+}
