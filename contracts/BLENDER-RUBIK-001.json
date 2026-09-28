@@ -1,0 +1,38 @@
+{
+  "id": "BLENDER-RUBIK-001",
+  "title": "Contract-driven Rubik cube Blender demo",
+  "intent": "Build and render a 3x3x3 Rubik cube scene with an explicit U-face quarter turn and machine-verifiable geometry.",
+  "authority": "human",
+  "implementation_write_set": [
+    "blender/build_scene.py",
+    "output/rubik.blend",
+    "output/render.png",
+    "output/scene-manifest.json"
+  ],
+  "frozen_judge": [
+    "blender/verify_scene.py"
+  ],
+  "acceptance": {
+    "cubies": 27,
+    "stickers": 54,
+    "stickers_per_face": 9,
+    "cubie_dimensions": [
+      0.94,
+      0.94,
+      0.94
+    ],
+    "top_turn_axis": "Z",
+    "top_turn_degrees": 90,
+    "render_resolution": [
+      768,
+      768
+    ],
+    "render_engine": "BLENDER_EEVEE_NEXT"
+  },
+  "evidence": [
+    "output/scene-manifest.json",
+    "output/verification.json",
+    "output/render.png",
+    "output/rubik.blend"
+  ]
+}
