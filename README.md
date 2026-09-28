@@ -71,3 +71,17 @@ The left side is a real 3D Rubik cube. The right side is a 54-node sticker permu
 - every move animates graph nodes along their ring to the new facelet slot.
 
 The workflow renders six 30-frame shards in parallel, merges all 180 frames, encodes H.264 MP4, and runs an independent frozen verifier against the cube and graph checkpoints.
+
+
+## Bounded scene editing
+
+`BLENDER-SCENE-EDIT-001` demonstrates editing an existing `.blend` under an explicit contract instead of rebuilding a new scene ad hoc.
+
+The example permits only:
+
+- a darker night world/background;
+- 15% tighter orthographic camera framing;
+- one new blue rim light;
+- new render output paths.
+
+The frozen verifier independently rebuilds/loads the base scene and compares protected static scene content plus all piece-root and graph-node transforms across all 180 animation frames. The edited result is accepted only if those semantic hashes remain identical while the requested visual changes are present.

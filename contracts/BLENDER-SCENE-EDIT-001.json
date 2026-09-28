@@ -1,0 +1,65 @@
+{
+  "id": "BLENDER-SCENE-EDIT-001",
+  "title": "Bounded edit of an existing Blender scene",
+  "base_contract": "BLENDER-RUBIK-SEQUENCE-001",
+  "base_scene": "sequence_output/sequence-animated.blend",
+  "intent": "Apply a night look, tighten orthographic camera framing by 15%, and add a blue rim light without changing cube geometry, graph structure, or R U R' U' animation.",
+  "authority": "human",
+  "allowed_changes": [
+    "world.background color and strength",
+    "camera.data.ortho_scale",
+    "add light Edit_BlueRim",
+    "render output paths"
+  ],
+  "forbidden_changes": [
+    "all non-camera/non-light object data",
+    "all non-camera/non-light object hierarchy",
+    "all piece-root transforms over frames 1..180",
+    "all graph-node transforms over frames 1..180",
+    "existing lights",
+    "camera object position and rotation",
+    "sequence metadata and timing"
+  ],
+  "expected_effects": {
+    "night_world": {
+      "color": [
+        0.0025,
+        0.006,
+        0.018,
+        1
+      ],
+      "strength": 0.1
+    },
+    "camera": {
+      "type": "ORTHO",
+      "framing_scale_factor": 0.85,
+      "transform_unchanged": true
+    },
+    "blue_rim": {
+      "name": "Edit_BlueRim",
+      "type": "AREA",
+      "color": [
+        0.04,
+        0.18,
+        1
+      ],
+      "energy": 1150
+    },
+    "resolution": [
+      480,
+      480
+    ],
+    "fps": 30,
+    "frame_range": [
+      1,
+      180
+    ]
+  },
+  "evidence": [
+    "edit_output/edited-sequence.blend",
+    "edit_output/edit-preview.png",
+    "edit_output/edit-demo.mp4",
+    "edit_output/edit-manifest.json",
+    "edit_output/edit-verification.json"
+  ]
+}
